@@ -156,110 +156,29 @@
     <article id="post-网络对抗原理实验一（一）" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/06/04/网络对抗原理实验一（一）/">H3</a>
+    </h1>
+  
+
+        
+        <a href="/2018/06/04/网络对抗原理实验一（一）/" class="archive-article-date">
+  	<time datetime="2018-06-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-06-04</time>
+</a>
+        
+      </header>
+    
     <div class="article-entry" itemprop="articleBody">
       
-        <p>#网络对抗原理实验一（一）</p>
-<p>标签（空格分隔）： 网络对抗原理</p>
-<hr>
-<p>##0.实验内容<br><br></p>
-<p>###0.建议在Linux环境下完成实验（推荐顺序Fedora&gt;Ubuntu&gt;其他linux发行版&gt;Kali or BT）。windows下如果能搞定配置也是可以接受的。</p>
-<p>###1.搭建mysql数据库，建立数据库test，数据表student，包含id，name，score三列。</p>
-<p>###2.搭建运用的运行环境，如nginx+php-fpm、tomcat+java等等。<!--main--></p>
-<p>###3.编写带有sql注入漏洞的借口程序，包含：<br>　　·   根据输入的参考值，拼接SQL查询语句并执行，将查询结果展示。如根据输入的学号展示姓名和分数。<br>　　·   根据输入的参考值，拼接SQL查询语句并执行，展示查询结果是否为空。如输入学号，展示是否有该学生存在。<br>　　·   根据输入的参考值，拼接SQL查询语句并执行，将查询结果是否为空展示在两段随机内容之间。<br>　　·   根据输入的参考值，拼接SQL查询语句并执行，展示查询结果的条件表达式结果，并将结果展示在两段随机内容之间。如输入学号，展示该学生分数是否大于60。<br>　　·   根据输入的参考值，拼接SQL查询语句并执行，但展示一个固定的结果。如输入是否有学生存在，然后输 出固定内容。<br>　　·   根据输入的参考值，拼接SQL语句并执行，更新数据库。如输入学号和分数，将对应学生的分数更新</p>
-<p>###4.针对上述各个应用接口，手工修改请求参数，尝试各种SQL注入的攻击向量，和正常访问的对照组一起，观察结果并记录。</p>
-<p>###5.针对上述各个应用接口，用sqlmap尝试各种注入方式，并用wireshark抓包，记录每次的目标、SQL命令行、结果（包括出结果的过程、和最终的输出）、和抓包文件。</p>
-<p>###6.分析抓包文件，了解攻击向量，体会各种注入技术的原理。并回到4步骤中手动尝试。</p>
-<p>###6.5.选做，在步骤3中第一个接口的基础上，尝试用不同的方法来避免SQL注入，再使用sqlmap尝试看是否有效，能否绕过。</p>
-<p>###7.写实验报告，看如何用一篇文档以及附件来讲明白上述实验的动机、步骤、结果、和分析结论。<br><br><br><br></p>
-<p>##1.实验过程</p>
-<p>###0.在vmware虚拟机中安装fedora操作系统：<br>　　这里考虑到电脑硬盘空间和自己贪玩的想法，选择的是Fedora-Server-x86_64-28-1.1版本。<br>　　选择自定义安装，为方便使用网络连接那里选择【桥接网络】<br>　　vmware会提前要求设置密码作为整个虚拟机登录的根密码，登录用户，切换root用户都是使用这个密码。<br>　　<br>　　<strong>a.<a href="https://blog.csdn.net/czg13548930186/article/details/77099074" target="_blank" rel="noopener">网络连接问题</a>:</strong><br>　　首先键入命令ifconfig查看网络连接，网卡名是ens33而不是熟悉的eth0，而且也没有ip，尝试ping了外部主机的ip和百度都没能成功，上网搜索解决办法大多数是将编辑网卡的配置文件/etc/sysconfig/network-scripts/ifcfg-ens33.<br>　　做备份后更改了配置文件发现并么有什么卵用，感觉问题并不是出在配置问题上，于是从vmware的虚拟机设置检查问题。在确认了网络连接是选择了桥接网络之后，<br>　　打开虚拟网络编辑器，点击VMnet信息下的桥接模式，弹窗出现“无法将网络更改为桥接状态：没有未桥接的主机网络适配器。<br>　　<strong><em>第一步，确定本地的有限和无线网卡支持vm连接：</em></strong><br>　　打开“网络”中的“适配器选项”，勾选wlan和以太网属性中的VMware Bridge Protocol。如果没有就在点“安装”选上安装，然后勾选，确定。<br>　　<strong><em>第二步，设备管理器中的驱动设备正常加载，但是注意这两个虚拟网卡是有问题的：</em></strong><br>　　将VMware Virtual Ethernet Adapter for VMnet1/8这两个虚拟网卡进行删除。<br>　　如果没发现这两个网卡，就不是这个问题，参考大神的另一个<a href="https://blog.csdn.net/czg13548930186/article/details/77099377" target="_blank" rel="noopener">解决办法</a>。<br>　　<strong><em>第三步，将虚拟机里的网络设置删除：</em></strong><br>　　在虚拟网络编辑器中两个虚拟网卡进行卸载删除，点击右中的“移除网络”按钮。<br>　　<strong><em>第四步，清空网卡后点击回复默认设置：</em></strong><br>　　首先，确保没有任何虚拟连接了<br>　　点击左下角的“恢复默认设置”按钮。<br>　　<em>注：如果以上步骤完成后还没有成功，那么一般就是之前的虚拟机没有卸载干净，需要卸载重装，方法<a href="https://blog.csdn.net/czg13548930186/article/details/77099377" target="_blank" rel="noopener">点击这里跳转</a></em><br>　　<br>　　<strong>b.使用sudo命令：</strong><br>　　在命令前点sudo就可以获得管理员权限，但是我这次使用sudo，键入密码后出现：“xxxx（用户名）is not in the sudoers file.”<br>　　解决办法：<br>　　<strong><em>第一步，切换到root身份：</em></strong><br>　　\$su - root<br>　　这里网上提示说要注意su后要加”-“，这里提一下su和su -的区别：<br>　　这两个命令的本质区别就是，su知识切换了root身份，但shell环境还是普通用户的shell。su -连用户和shell环境都切换成root身份了。只有切换了shell环境才不会出现PATH环境变量错误。<br>　　可以注意一下但是也可以su之后自己再手动cd到root目录下。<br>　　<strong><em>第二步，打开sudoer file：</em></strong><br>　　\$visudo<br>　　a. 在常规模式下输入：<br>　　?root ALL=(ALL)<br>　　b. 找到”root ALL=(ALL) ALL”那一行，按i进入insert模式，在其下一行写上：<br>　　your_user_name ALL=(ALL) ALL<br>　　c. 按”ctrl+[“或esc回到常规模式，输入”:wq” 保存退出<br>　　<br>　　这样就把自己加入了sudo组了，可以使用sudo命令了。<br>　　<br>　　<em>然而我现在其实都是直接su root，因为是为了做实验，所以图方便。。。</em><br>　　<strong>c.fedora 加国内更新源：</strong><br>　　网上很多教程说要删除/etc/yum.repos.d/目录下所有原来的文件，这样感觉很不稳妥，要国内源和原始源并存，只要安装一个选最快源的程序：<br>　　sudo dnf install yum-fastestmiroor<br>　　然后再安装<a href="https://blog.csdn.net/javafoam/article/details/78992486" target="_blank" rel="noopener">国内源</a>
-　　</p>
-<blockquote>
-<p><strong><em>Linux操作系统是个很好的操作系统，这里贴两个学习的相关网站：</em></strong></p>
-<ul>
-<li><a href="https://www.linuxprobe.com/chapter-00.html" target="_blank" rel="noopener">Linux就该这么学</a></li>
-<li><a href="https://www.linuxidc.com/Linux/2015-06/118751.htm" target="_blank" rel="noopener">DNF的命令使用教学</a></li>
-</ul>
-</blockquote>
-<p><br><br><br></p>
-<p>###1.安装mySQL，建立数据库和数据表<br>　　<strong>a.使用dnf安装mysql：</strong><br>　　　　<strong><em>1.安装mysql的yum仓库：</em></strong></p>
-<blockquote>
-<pre><code>yum localinstall https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm 
-</code></pre></blockquote>
-<p>　　　　<strong><em>2.安装mysql</em></strong></p>
-<blockquote>
-<p>　　dnf install mysql-community-server</p>
-</blockquote>
-<p>　　　　<strong><em>3.开启mysql服务</em></strong></p>
-<blockquote>
-<p>　　service mysql start   或　　systemctl start mysql.service</p>
-</blockquote>
-<p>　　　　这里我出现了一个问题：<br>　　　　Failed to start mysql.service: Unit not found.<br>　　　　我在这里困了很久，网上的解决办法基本上都是说linux开始使用mysql的分支mariadb了，所以应该安装mariadb，然而我在安装之后问题大同小异：<br>　　　　Failed to start mariadb.service: Unit not found.<br>　　　　<br>　　　　其实这里我是没有安装mySQL的依赖包，于是我输入命令：</p>
-<blockquote>
-<p>　　dnf search mysql</p>
-</blockquote>
-<p>　　　　查看mysql相关包（不过我这是多此一举，我这么懒肯定是看都不看全都装上的）</p>
-<blockquote>
-<p>　　dnf install mysql -*</p>
-</blockquote>
-<p>　　　　这里又出现问题，具体好像就是新旧版本的依赖包有冲突，如果需要覆盖就allowerasing，我肯定都erasing了啊！</p>
-<blockquote>
-<p>　　dnf install mysql -* –allowerasing</p>
-</blockquote>
-<p>　　　　到此mysql安装完毕，输入service mysql start启动mysql服务，<br>　　　　然而，我还是没能启动mysql服务，原因是命令错了！正确的是</p>
-<blockquote>
-<p>　　service mysqld start　　　　注意，是mysqld啊啊啊啊！！！</p>
-</blockquote>
-<p>　　　　<strong><em>4.查找默认密码</em></strong><br>　　　　为了加强安全性，mysql5.7为root用户随机生成了一个密码，在error log中，关于error log位置，如果安装的RPM包，则默认是/var/log/mysqld.log。<br>　　　　只有启动过一次mysql才可以查看临时密码，输入以下命令查看密码：</p>
-<blockquote>
-<p>　　grep ‘temporary password’ /var/log/mysqld.log</p>
-</blockquote>
-<p>　　　　密码在最后一行，乱不拉几的那个。<br>　　　　<strong><em>5.登录mysql并且修改密码</em></strong></p>
-<blockquote>
-<p>　　ALTER USER ‘root‘@’localhost’ IDENTIFIED BY ‘xxxxxx（新密码）’</p>
-</blockquote>
-<p>　　　　但是会出现：<br>　　　　ERROR 1819(HY000):Your password dose not satisfy the current policy requirements<br>　　　　<br>　　　　我们就去修改两个全局参数：</p>
-<blockquote>
-<p>　　set global validate_password_policy=0;　　这个意思是密码最低强度等级设为0<br>　　set global validate_password_length=1;　　这个意思是密码最短长度设为1</p>
-</blockquote>
-<p>　　　　然后我们再次修改密码就可以了。<br>　　　　<br>　　　　<strong><em>6.授权其他服务器连接</em></strong><br>　　　　如果不实现这一步，我们在telnet mysql时候会出现：<br>　　　　<br>　　　　is not allowed to connect to this MySQL serverConnection closed by foreign host<br>　　　　<br>　　　　这个原因是因为索要连接的mysql数据库只允许其所在的服务器连接，需要在mysql服务器上设置一下允许的ip权限。<br>　　　　我们先用root进入mysql，授权：</p>
-<blockquote>
-<p>GRAUT ALL PRIVILEGES ON <em>.</em> TO ‘root‘@’xxx.xxx.xx.xxx(服务器ip)’ IDENTIFIED BY ‘xxxxxx(登录密码)’ WITH GRANT OPTION;　　　　授权该服务器连接<br>GRAUT ALL PRIVILEGES ON <em>.</em> TO ‘root‘@’%’ IDENTIFIED BY ‘xxxxxx(登录密码)’ WITH GRANT OPTION;　　　　　　　　授权每个服务器都可以连接<br>flush privileges;　　　　　使授权立即生效。</p>
-</blockquote>
-<p>　　　　这一步的实现会遇到一个报错导致无法成功：<br>　　　　You must reset your password using ALTER USER statement befor executing<br>　　　　根据网上的说法，我们直接：</p>
-<blockquote>
-<p>mysql.server stop　　#先关闭正常的mySQL服务<br>mysqld_safe –skip-grant-tables　　#跳过mySQL认证<br>mysql -u root -p　　　　#提示密码时，直接ENTER就可以进入mySQL命令行</p>
-</blockquote>
-<blockquote>
-<p>use mysql;<br>update user set password=password(‘new password’) where user=’root’;　　#然而这一步会报错：<br>　　　　“Unknown column ‘password’”</p>
-</blockquote>
-<p>经过上网一番搜查，居然是因为mysql升级后将字段名给改了，password名称改为authentication_string了。，那么问题就很简单了，把上一行命令改成</p>
-<blockquote>
-<p>update user set password=password(‘new password’) where user=’root’; </p>
-</blockquote>
-<p>就可以了</p>
-<blockquote>
-<p>exit;</p>
-</blockquote>
-<blockquote>
-<p>mysql.server start　　　　#再次启动mySQL服务，就可以使用正常新密码了。</p>
-</blockquote>
-<p>然而网上还有另外一个解决办法，我没有试过，不知道，仅供参考：　　　　</p>
-<blockquote>
-<p>SET PASSWORD = PASSWORD(‘your new password’);<br>ALTER USER ‘root‘@localhost’ PASSWORD EXPIRE NEVER　　　　不让这个报错再出现<br>flush privileges.</p>
-</blockquote>
-<p>　　　　</p>
-<p>　　　　然后再远程Telnet或者连接这个mysql数据库就可以成功了。
-　　　　
-　　　　</p>
-<blockquote>
-<p>　　　<strong><em>密码设置的详细说明：</em></strong><br>　　　<a href="https://m.jb51.net/article/116032.htm" target="_blank" rel="noopener">Centos7.3下mysql5.7.18安装并修改初始密码的方法</a></p>
-</blockquote>
-<blockquote>
-<p>　　　<strong><em>sql指令的学习网站</em></strong><br>　　　<a href="http://www.w3school.com.cn/sql/index.asp" target="_blank" rel="noopener">SQL教程</a></p>
-</blockquote>
-<p>　　<strong>b.建立数据库test，数据表student，包含id，name，score三列：</strong></p>
-
+        <h1 id="网络对抗原理实验一（一）"><a href="#网络对抗原理实验一（一）" class="headerlink" title="网络对抗原理实验一（一）"></a>网络对抗原理实验一（一）</h1><hr>
+<h2 id="0-实验内容"><a href="#0-实验内容" class="headerlink" title="0.实验内容"></a>0.实验内容</h2><p><br></p>
+<h3 id="0-建议在Linux环境下完成实验（推荐顺序Fedora-gt-Ubuntu-gt-其他linux发行版-gt-Kali-or-BT）。windows下如果能搞定配置也是可以接受的。"><a href="#0-建议在Linux环境下完成实验（推荐顺序Fedora-gt-Ubuntu-gt-其他linux发行版-gt-Kali-or-BT）。windows下如果能搞定配置也是可以接受的。" class="headerlink" title="0.建议在Linux环境下完成实验（推荐顺序Fedora&gt;Ubuntu&gt;其他linux发行版&gt;Kali or BT）。windows下如果能搞定配置也是可以接受的。"></a>0.建议在Linux环境下完成实验（推荐顺序Fedora&gt;Ubuntu&gt;其他linux发行版&gt;Kali or BT）。windows下如果能搞定配置也是可以接受的。</h3><h3 id="1-搭建mysql数据库，建立数据库test，数据表student，包含id，name，score三列。"><a href="#1-搭建mysql数据库，建立数据库test，数据表student，包含id，name，score三列。" class="headerlink" title="1.搭建mysql数据库，建立数据库test，数据表student，包含id，name，score三列。"></a>1.搭建mysql数据库，建立数据库test，数据表student，包含id，name，score三列。</h3><h3 id="2-搭建运用的运行环境，如nginx-php-fpm、tomcat-java等等。"><a href="#2-搭建运用的运行环境，如nginx-php-fpm、tomcat-java等等。" class="headerlink" title="2.搭建运用的运行环境，如nginx+php-fpm、tomcat+java等等。"></a>2.搭建运用的运行环境，如nginx+php-fpm、tomcat+java等等。</h3>
+        
+          <a class="article-more-a" href="/2018/06/04/网络对抗原理实验一（一）/#more">more >></a>
+        
       
 
       
@@ -267,6 +186,17 @@
     <div class="article-info article-info-index">
       
       
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">network_confrontation</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
       
 
       
@@ -549,6 +479,10 @@ getOwnMetadataKeys:function(t){return o(i(t),arguments.length<2?void 0:u(argumen
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color1">software_secure</a>
+              </li>
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color2">network_confrontation</a>
               </li>
             
             <div class="clearfix"></div>
